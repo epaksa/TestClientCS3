@@ -13,9 +13,6 @@ namespace TestClientCS.Common.Network
 {
     public class Client
     {
-        static Random random = new Random();
-        static object random_lock = new object();
-
         TcpClient client = new TcpClient();
 
         int id = 0;
@@ -25,6 +22,9 @@ namespace TestClientCS.Common.Network
 
         RingBuffer _temp_buffer = new RingBuffer();
         RingBuffer _read_buffer = new RingBuffer();
+
+        int received_count = 0;
+        int received_bytes = 0;
 
         public Client(int id, int required_send_count)
         {
@@ -95,20 +95,27 @@ namespace TestClientCS.Common.Network
         {
             client.EndConnect(ar);
 
+            bool ready = false;
+
             lock (Program.LOCK_CONNECTED_CLIENT_COUNT)
             {
                 ++(Program.CONNECTED_CLIENT_COUNT);
+                
+                Log.Write($"client connected. id : {id}");
+
+                if (Program.CLIENT_COUNT == Program.CONNECTED_CLIENT_COUNT)
+                {
+                    ready = true;
+                }
             }
 
-            Log.Write($"client connected. id : {id}");
-
-            if (Program.CLIENT_COUNT == Program.CONNECTED_CLIENT_COUNT)
+            if (ready)
             {
                 Program.Start();
             }
         }
 
-        private async void OnSend(IAsyncResult ar)
+        private void OnSend(IAsyncResult ar)
         {
             try
             {
@@ -125,17 +132,10 @@ namespace TestClientCS.Common.Network
                 {
                     ++current_send_count;
 
-                    int send_interval = 0;
-
-                    lock (random_lock)
-                    {
-                        send_interval = random.Next(Program.MIN_SEND_INTERVAL_IN_MS, Program.MAX_SEND_INTERVAL_IN_MS + 1);
-                    }
-
                     // commented for broadcast test
-                    //Log.Write($"client sent. id : {id}. current send count : {current_send_count}, next interval time : {send_interval}, x : {sent_packet._x}, y : {sent_packet._y}");
+                    //Log.Write($"client sent. id : {id}. current send count : {current_send_count}, x : {sent_packet._x}, y : {sent_packet._y}");
 
-                    await Task.Delay(send_interval).ConfigureAwait(false);
+                    Thread.Sleep(1); // 이거 빼니까... boost asio에서 crash남.. release로 빌드해도 남
 
                     Send();
                 }
@@ -154,6 +154,10 @@ namespace TestClientCS.Common.Network
             try
             {
                 int read_bytes = client.GetStream().EndRead(ar);
+
+                ++received_count;
+                received_bytes += read_bytes;
+                Log.Write($"OnReceive() => id : {id}, count : {received_count}, bytes : {received_bytes}");
 
                 if (false == _read_buffer.SetWriteIndex(read_bytes))
                 {
@@ -199,7 +203,7 @@ namespace TestClientCS.Common.Network
                 {
                     sc_move move_packet = (sc_move)packet;
 
-                    //Log.Write($"received. _move_client_id : {move_packet._move_client_id}, _x : {move_packet._x}, _y : {move_packet._y}");
+                    Log.Write($"received. _move_client_id : {move_packet._move_client_id}, _x : {move_packet._x}, _y : {move_packet._y}");
 
                     if (move_packet._x == id) // client 내부 id랑 서버 id랑 다름... 쓸모없지만 대략적인 latency 확인용 => x가 id였구나. 임시 해결
                     {
@@ -243,16 +247,9 @@ namespace TestClientCS.Common.Network
 
             if (false == _temp_buffer.Empty())
             {
-                Log.Write($"temp buffer is not empty!!");
+                //Log.Write($"temp buffer is not empty!!");
 
-                if (false == _temp_buffer.Pop(new ArraySegment<byte>(packet_buffer, 0, packet_buffer.Length), sizeof(int)))
-                {
-                    Log.Write($"get sizeof(int) failed in temp buffer.");
-                    return false;
-                }
-
-                current_size = sizeof(int);
-                current_size += _temp_buffer.PopAll(new ArraySegment<byte>(packet_buffer, current_size, packet_buffer.Length - current_size));
+                current_size += _temp_buffer.PopAll(new ArraySegment<byte>(packet_buffer, current_size, packet_buffer.Length));
             }
             else
             {
@@ -264,9 +261,13 @@ namespace TestClientCS.Common.Network
 
                 if (false == _read_buffer.Pop(new ArraySegment<byte>(packet_buffer, 0, packet_buffer.Length), sizeof(int)))
                 {
-                    Log.Write($"get sizeof(int) failed in read buffer.");
+                    //Log.Write($"get sizeof(int) failed in read buffer.");
                     return false;
                 }
+                //else
+                //{
+                //    Log.Write($"pop 1 => id : {id}, current read index : {_read_buffer._read_index}");
+                //}
 
                 current_size = sizeof(int);
             }
@@ -275,9 +276,13 @@ namespace TestClientCS.Common.Network
 
             if (false == _read_buffer.Pop(new ArraySegment<byte>(packet_buffer, current_size, packet_buffer.Length - current_size), packet_size - current_size))
             {
-                Log.Write($"get (packet_size({packet_size}) - current_size({current_size})) failed in read buffer.");
+                //Log.Write($"get (packet_size({packet_size}) - current_size({current_size})) failed in read buffer.");
                 return false;
             }
+            //else
+            //{
+            //    Log.Write($"pop 2 => id : {id}, current read index : {_read_buffer._read_index}");
+            //}
 
             return true;
         }

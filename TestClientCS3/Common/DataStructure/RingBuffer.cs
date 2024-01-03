@@ -99,14 +99,50 @@ namespace TestClientCS.Common.DataStructure
             _write_index = buffer._write_index;
         }
 
+        public int AvailableSize()
+        {
+            if (_read_index > _write_index)
+            {
+                return ((Program.READ_BUFFER_SIZE - 1) - ((_write_index + Program.READ_BUFFER_SIZE) - _read_index));
+            }
+            else
+            {
+                return ((Program.READ_BUFFER_SIZE - 1) - (_write_index - _read_index));
+            }
+        }
+
         private bool CanPush(int size)
         {
-            return (size < _buffer.Length && (_write_index + size - _buffer.Length) < _read_index);
+            if (size <= 0 || size >= Program.READ_BUFFER_SIZE)
+            {
+                return false;
+            }
+
+            if (_read_index > _write_index)
+            {
+                return (size <= (Program.READ_BUFFER_SIZE - 1) - ((_write_index + Program.READ_BUFFER_SIZE) - _read_index));
+            }
+            else
+            {
+                return (size <= (Program.READ_BUFFER_SIZE - 1) - (_write_index - _read_index));
+            }
         }
 
         private bool CanPop(int size)
         {
-            return (size < _buffer.Length && (_read_index + size - _buffer.Length) <= _write_index);
+            if (size <= 0 || size >= Program.READ_BUFFER_SIZE)
+            {
+                return false;
+            }
+
+            if (_read_index > _write_index)
+            {
+                return (size <= (_write_index + Program.READ_BUFFER_SIZE) - _read_index);
+            }
+            else
+            {
+                return (size <= _write_index - _read_index);
+            }
         }
     }
 }

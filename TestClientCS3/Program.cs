@@ -16,13 +16,11 @@ namespace TestClientCS
         public static readonly string SERVER_IP = "localhost";
         public static readonly int SERVER_PORT = 19001;
 
-        public static readonly int MIN_SEND_COUNT_FOR_CLIENT = 30;
-        public static readonly int MAX_SEND_COUNT_FOR_CLIENT = 30;
+        public static readonly int MIN_SEND_COUNT_FOR_CLIENT = 300;
+        public static readonly int MAX_SEND_COUNT_FOR_CLIENT = 300;
 
         public static readonly int SEND_BUFFER_SIZE = 1024;
         public static readonly int READ_BUFFER_SIZE = 1024;
-        public static readonly int MIN_SEND_INTERVAL_IN_MS = 30;
-        public static readonly int MAX_SEND_INTERVAL_IN_MS = 30;
 
         public static readonly int LATENCY_LIMIT_IN_MS = 1000;
 
@@ -44,7 +42,6 @@ namespace TestClientCS
             Log.Write($"client count => {CLIENT_COUNT}");
             Log.Write($"server => {SERVER_IP}:{SERVER_PORT}");
             Log.Write($"min/max send count => {MIN_SEND_COUNT_FOR_CLIENT}/{MAX_SEND_COUNT_FOR_CLIENT}");
-            Log.Write($"min/max send interval(ms) => {MIN_SEND_INTERVAL_IN_MS}/{MAX_SEND_INTERVAL_IN_MS}");
             Log.Write($"send buffer size => {SEND_BUFFER_SIZE}");
             Log.Write($"read buffer size => {READ_BUFFER_SIZE}");
             Log.Write($"latency limit(ms) => {LATENCY_LIMIT_IN_MS}");
@@ -63,10 +60,9 @@ namespace TestClientCS
 
         public static void Start()
         {
-            foreach (Client client in list_client)
-            {
-                client.Start();
-            }
+            Parallel.ForEach(list_client, client => {
+                client.Start(); 
+            });
         }
     }
 }
