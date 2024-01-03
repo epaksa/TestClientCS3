@@ -157,7 +157,7 @@ namespace TestClientCS.Common.Network
 
                 ++received_count;
                 received_bytes += read_bytes;
-                Log.Write($"OnReceive() => id : {id}, count : {received_count}, bytes : {received_bytes}");
+                Log.Write($"OnReceive() => id : {id}, count : {received_count}, received bytes : {read_bytes}, total bytes : {received_bytes}");
 
                 if (false == _read_buffer.SetWriteIndex(read_bytes))
                 {
