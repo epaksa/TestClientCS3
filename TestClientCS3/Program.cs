@@ -11,6 +11,9 @@ namespace TestClientCS
 {
     class Program
     {
+        public static readonly string LOG_FILE_NAME = "log.txt";
+        public static readonly string MAP_FILE_NAME = "map.csv";
+
         public static readonly int CLIENT_COUNT = 10;
 
         public static readonly string SERVER_IP = "localhost";
@@ -35,7 +38,7 @@ namespace TestClientCS
         {
             List<Task> list_task = new List<Task>();
 
-            Task log_task = Log.Start("log.txt");
+            Task log_task = Log.Start(LOG_FILE_NAME);
             list_task.Add(log_task);
 
             Log.Write($"############## CONFIG ##############");
