@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TestClientCS.Common;
 using TestClientCS.Common.Network;
+using TestClientCS3.Game.Zone;
 
 namespace TestClientCS
 {
@@ -19,20 +20,16 @@ namespace TestClientCS
         public static readonly string SERVER_IP = "localhost";
         public static readonly int SERVER_PORT = 19001;
 
-        public static readonly int MIN_SEND_COUNT_FOR_CLIENT = 300;
-        public static readonly int MAX_SEND_COUNT_FOR_CLIENT = 300;
-
         public static readonly int SEND_BUFFER_SIZE = 1024;
         public static readonly int READ_BUFFER_SIZE = 1024;
 
         public static readonly int LATENCY_LIMIT_IN_MS = 1000;
 
-        static readonly Random RANDOM = new Random();
-        
         public static int CONNECTED_CLIENT_COUNT = 0;
         public static object LOCK_CONNECTED_CLIENT_COUNT = new object();
 
-        public static List<Client> list_client = new List<Client>();
+        public static List<Client> LIST_CLIENT = new List<Client>();
+        public static Zone? ZONE = null;
 
         static void Main(string[] args)
         {
@@ -44,18 +41,21 @@ namespace TestClientCS
             Log.Write($"############## CONFIG ##############");
             Log.Write($"client count => {CLIENT_COUNT}");
             Log.Write($"server => {SERVER_IP}:{SERVER_PORT}");
-            Log.Write($"min/max send count => {MIN_SEND_COUNT_FOR_CLIENT}/{MAX_SEND_COUNT_FOR_CLIENT}");
             Log.Write($"send buffer size => {SEND_BUFFER_SIZE}");
             Log.Write($"read buffer size => {READ_BUFFER_SIZE}");
             Log.Write($"latency limit(ms) => {LATENCY_LIMIT_IN_MS}");
             Log.Write($"###################################");
 
+            ZONE = new Zone(MAP_FILE_NAME);
+            Task zone_task = ZONE.Start();
+            list_task.Add(zone_task);
+
             for (int client_id = 1; client_id <= CLIENT_COUNT; ++client_id)
             {
-                Client client = new Client(client_id, RANDOM.Next(MIN_SEND_COUNT_FOR_CLIENT, MAX_SEND_COUNT_FOR_CLIENT + 1));
+                Client client = new Client();
                 client.Connect(SERVER_IP, SERVER_PORT);
 
-                list_client.Add(client);
+                LIST_CLIENT.Add(client);
             }
 
             Task.WaitAll(list_task.ToArray());
@@ -63,7 +63,7 @@ namespace TestClientCS
 
         public static void Start()
         {
-            Parallel.ForEach(list_client, client => {
+            Parallel.ForEach(LIST_CLIENT, client => {
                 client.Start(); 
             });
         }

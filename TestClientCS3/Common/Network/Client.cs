@@ -13,34 +13,22 @@ namespace TestClientCS.Common.Network
 {
     public class Client
     {
-        TcpClient client = new TcpClient();
+        TcpClient _client = new TcpClient();
 
-        int id = 0;
-        int required_send_count = 0;
-        int current_send_count = 1;
-        ConcurrentDictionary<int, long> map_send_history = new ConcurrentDictionary<int, long>(); // key : send count number, value : send time
+        int _id = 0;
+        int _current_send_count = 1;
+        ConcurrentDictionary<int, long> _map_send_history = new ConcurrentDictionary<int, long>(); // key : send count number, value : send time
 
         RingBuffer _temp_buffer = new RingBuffer();
         RingBuffer _read_buffer = new RingBuffer();
-
-        int received_count = 0;
-        int received_bytes = 0;
-
-        public Client(int id, int required_send_count)
-        {
-            this.id = id;
-            this.required_send_count = required_send_count;
-
-            Log.Write($"created client. id : {id}, required send count : {required_send_count}");
-        }
 
         public void Send()
         {
             try
             {
                 cs_move packet = new cs_move();
-                packet._x = id;
-                packet._y = current_send_count;
+                packet._x = _id;
+                packet._y = _current_send_count;
 
                 byte[] buffer = new byte[Program.SEND_BUFFER_SIZE];
                 int buffer_length = packet.Serialize(ref buffer);
@@ -49,15 +37,15 @@ namespace TestClientCS.Common.Network
                 //Log.Write($"client sends. id : {id}, x : {packet._x}, y : {packet._y}");
 
                 // 여기서부터 시간재는게 맞을까? 아니면 OnSend()에서 재는게 맞을까..?
-                map_send_history.TryAdd(current_send_count, new DateTimeOffset(DateTime.Now).ToUnixTimeMilliseconds());
+                _map_send_history.TryAdd(_current_send_count, new DateTimeOffset(DateTime.Now).ToUnixTimeMilliseconds());
 
-                client.GetStream().BeginWrite(buffer, 0, buffer_length, OnSend, packet);
+                _client.GetStream().BeginWrite(buffer, 0, buffer_length, OnSend, packet);
             }
             catch (Exception ex)
             {
                 if (ex is ObjectDisposedException || ex is InvalidOperationException)
                 {
-                    Log.Write($"client disconnected(Send()). id : {id}");
+                    Log.Write($"client disconnected(Send()). id : {_id}");
                 }
             }
         }
@@ -67,33 +55,30 @@ namespace TestClientCS.Common.Network
             try
             {
                 _read_buffer.Clear();
-                client.GetStream().BeginRead(_read_buffer.Data(), 0, _read_buffer.GetLength() - 1, OnReceive, null);
+                _client.GetStream().BeginRead(_read_buffer.Data(), 0, _read_buffer.GetLength() - 1, OnReceive, null);
             }
             catch (Exception ex)
             {
                 if (ex is ObjectDisposedException || ex is InvalidOperationException)
                 {
-                    Log.Write($"client disconnected(Receive()). id : {id}");
+                    Log.Write($"client disconnected(Receive()). id : {_id}");
                 }
             }
         }
 
         public void Connect(string ip, int port)
         {
-            Log.Write($"client try to connect. id : {id}");
-
-            client.BeginConnect(ip, port, OnConnect, null);
+            _client.BeginConnect(ip, port, OnConnect, null);
         }
 
         public void Start()
         {
             Receive();
-            Send();
         }
 
         private void OnConnect(IAsyncResult ar)
         {
-            client.EndConnect(ar);
+            _client.EndConnect(ar);
 
             bool ready = false;
 
@@ -101,8 +86,6 @@ namespace TestClientCS.Common.Network
             {
                 ++(Program.CONNECTED_CLIENT_COUNT);
                 
-                Log.Write($"client connected. id : {id}");
-
                 if (Program.CLIENT_COUNT == Program.CONNECTED_CLIENT_COUNT)
                 {
                     ready = true;
@@ -119,32 +102,24 @@ namespace TestClientCS.Common.Network
         {
             try
             {
-                client.GetStream().EndWrite(ar);
+                _client.GetStream().EndWrite(ar);
 
                 cs_move sent_packet = (cs_move)ar.AsyncState;
 
-                if (current_send_count == required_send_count)
-                {
-                    Log.Write($"client finished to send required send times. id : {id}");
-                    //client.Close();
-                }
-                else
-                {
-                    ++current_send_count;
+                ++_current_send_count;
 
-                    // commented for broadcast test
-                    //Log.Write($"client sent. id : {id}. current send count : {current_send_count}, x : {sent_packet._x}, y : {sent_packet._y}");
+                // commented for broadcast test
+                //Log.Write($"client sent. id : {id}. current send count : {current_send_count}, x : {sent_packet._x}, y : {sent_packet._y}");
 
-                    Thread.Sleep(1); // 이거 빼니까... boost asio에서 crash남.. release로 빌드해도 남
+                Thread.Sleep(1); // 이거 빼니까... boost asio에서 crash남.. release로 빌드해도 남
 
-                    Send();
-                }
+                Send();
             }
             catch (Exception ex)
             {
                 if (ex is ObjectDisposedException || ex is InvalidOperationException)
                 {
-                    Log.Write($"client disconnected(OnSend()). id : {id}");
+                    Log.Write($"client disconnected(OnSend()). id : {_id}");
                 }
             }
         }
@@ -153,11 +128,7 @@ namespace TestClientCS.Common.Network
         {
             try
             {
-                int read_bytes = client.GetStream().EndRead(ar);
-
-                ++received_count;
-                received_bytes += read_bytes;
-                Log.Write($"OnReceive() => id : {id}, count : {received_count}, received bytes : {read_bytes}, total bytes : {received_bytes}");
+                int read_bytes = _client.GetStream().EndRead(ar);
 
                 if (false == _read_buffer.SetWriteIndex(read_bytes))
                 {
@@ -180,12 +151,16 @@ namespace TestClientCS.Common.Network
                         break;
                     }
 
-                    // worker thread로 원래는 넘어가야하고, buffer 및 packet instance life cycle에 대한 고민을 해야함
                     BasePacket packet = MakePacket(ref packet_buffer, packet_size);
 
                     if (null != packet)
                     {
-                        list_packet.Add(packet);
+                        if (packet._packet_id == PacketID.sc_login)
+                        {
+                            _id = ((sc_login)packet)._client_id;
+                        }
+
+                        Program.ZONE?.PushPacket(packet);
                     }
                     else
                     {
@@ -198,45 +173,12 @@ namespace TestClientCS.Common.Network
                 }
 
                 Receive();
-
-                foreach (BasePacket packet in list_packet)
-                {
-                    sc_move move_packet = (sc_move)packet;
-
-                    Log.Write($"received. _move_client_id : {move_packet._move_client_id}, _x : {move_packet._x}, _y : {move_packet._y}");
-
-                    if (move_packet._x == id) // client 내부 id랑 서버 id랑 다름... 쓸모없지만 대략적인 latency 확인용 => x가 id였구나. 임시 해결
-                    {
-                        int send_count = move_packet._y;
-
-                        if (send_count == Program.MAX_SEND_COUNT_FOR_CLIENT)
-                        {
-                            Log.Write($"received last. _move_client_id : {move_packet._move_client_id}, _x : {move_packet._x}, _y : {move_packet._y}");
-                        }
-
-                        long send_time = 0;
-                        if (map_send_history.TryGetValue(send_count, out send_time))
-                        {
-                            long now = new DateTimeOffset(DateTime.Now).ToUnixTimeMilliseconds();
-                            long elapsed_time = now - send_time;
-
-                            if (elapsed_time >= Program.LATENCY_LIMIT_IN_MS)
-                            {
-                                Log.Write($"latency limit over. id : {id}. elapsed time : {elapsed_time}");
-                            }
-                        }
-                        else
-                        {
-                            Log.Write($"send history not found. id : {id}. send count : {send_count}");
-                        }
-                    }
-                }
             }
             catch (Exception ex)
             {
                 if (ex is ObjectDisposedException || ex is InvalidOperationException)
                 {
-                    Log.Write($"client disconnected(OnReceive()). id : {id}");
+                    Log.Write($"client disconnected(OnReceive()). id : {_id}");
                 }
             }
         }
