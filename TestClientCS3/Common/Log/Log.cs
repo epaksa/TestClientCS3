@@ -23,7 +23,7 @@ namespace TestClientCS.Common
                 {
                     writer.AutoFlush = true;
 
-                    string message = string.Empty;
+                    string? message = string.Empty;
 
                     while (true)
                     {

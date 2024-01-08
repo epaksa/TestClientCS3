@@ -13,9 +13,10 @@ namespace TestClientCS.Common.Network
 {
     public class Client
     {
+        public int _id = 0;
+        
         TcpClient _client = new TcpClient();
 
-        int _id = 0;
         int _current_send_count = 1;
         ConcurrentDictionary<int, long> _map_send_history = new ConcurrentDictionary<int, long>(); // key : send count number, value : send time
 
@@ -231,13 +232,13 @@ namespace TestClientCS.Common.Network
             return true;
         }
 
-        private BasePacket MakePacket(ref byte[] packet_buffer, int packet_size) // 지금은 packet_size를 안써도, 가변 size의 패킷들이 있어서 나중에 필요함.
+        private BasePacket? MakePacket(ref byte[] packet_buffer, int packet_size) // 지금은 packet_size를 안써도, 가변 size의 패킷들이 있어서 나중에 필요함.
         {
             // todo : 생성자에 size집어넣는거 빼기. size는 보낼때 결정되야함... list형식이나 chat같은 패킷땜에
 
             PacketID packet_id = (PacketID)BitConverter.ToInt32(packet_buffer, sizeof(int));
 
-            BasePacket packet = null;
+            BasePacket? packet = null;
 
             switch (packet_id)
             {

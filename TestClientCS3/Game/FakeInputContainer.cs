@@ -28,13 +28,30 @@ namespace TestClientCS3.Game
         }
     }
 
-    internal static class FakeInputGenerator
+    internal static class FakeInputContainer
     {
         private static Dictionary<int, FakeInput> _map = new Dictionary<int, FakeInput>(); // key : client id
 
-        public static bool RegisterInput(FakeInput input)
+        public static bool Exist(int client_id)
         {
-            _map.ContainsKey()
+            return _map.ContainsKey(client_id);
+        }
+        
+        public static void PushInput(FakeInput input)
+        {
+            _map.Add(input._client._id, input);
+        }
+
+        public static FakeInput? PopInput(int client_id)
+        {
+            FakeInput? input;
+            if (_map.TryGetValue(client_id, out input))
+            {
+                _map.Remove(client_id);
+                return input;
+            }
+
+            return null;
         }
     }
 }
