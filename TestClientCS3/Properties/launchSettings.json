@@ -2,7 +2,7 @@
   "profiles": {
     "TestClientCS3": {
       "commandName": "Project",
-      "workingDirectory": "$(SolutionDir)files"
+      "workingDirectory": "$(SolutionDir)file"
     }
   }
 }
