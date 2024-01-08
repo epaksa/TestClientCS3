@@ -397,4 +397,4 @@ FodyWeavers.xsd
 *.sln.iml
 
 # test log
-Files/log.txt
+File/log.txt
