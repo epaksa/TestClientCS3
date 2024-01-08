@@ -13,7 +13,9 @@ namespace TestClientCS3.Game.Zone
 {
     internal class Zone
     {
-        private ConcurrentQueue<BasePacket> _packet_queue = new ConcurrentQueue<BasePacket> ();
+        private ConcurrentQueue<PacketContext> _packet_context_queue = new ConcurrentQueue<PacketContext> ();
+
+        //private List<> _fake
         
         private List<List<Tile>> _tile = new List<List<Tile>>();
 
@@ -51,21 +53,23 @@ namespace TestClientCS3.Game.Zone
         {
             return Task.Run(() =>
             {
-                BasePacket? packet = null;
+                PacketContext? context = null;
 
                 while (true)
                 {
-                    if (_packet_queue.TryDequeue(out packet))
+                    if (_packet_context_queue.TryDequeue(out context))
                     {
-                        HandlePacket(packet);
+                        HandlePacketContext(context);
                     }
+
+                    // 가라 input 실행
                 }
             });
         }
 
-        public void PushPacket(BasePacket packet)
+        public void PushPacketContext(PacketContext context)
         {
-            _packet_queue.Enqueue(packet);
+            _packet_context_queue.Enqueue(context);
         }
 
         private bool CheckTile(int x, int y)
@@ -90,15 +94,18 @@ namespace TestClientCS3.Game.Zone
             _tile[x][y]._object = obj;
         }
 
-        private void HandlePacket(BasePacket packet)
+        private void HandlePacketContext(PacketContext context)
         {
-            switch (packet._packet_id)
+            switch (context._packet._packet_id)
             {
                 case PacketID.sc_login:
-                    ProcessPacket((sc_login)packet);
+                    ProcessPacket((sc_login)context._packet);
+                    break;
+                case PacketID.sc_welcome:
+                    ProcessPacket((sc_welcome)context._packet);
                     break;
                 case PacketID.sc_move:
-                    ProcessPacket((sc_move)packet);
+                    ProcessPacket((sc_move)context._packet);
                     break;
                 default:
                     break;
@@ -114,6 +121,18 @@ namespace TestClientCS3.Game.Zone
                 SetObject(packet._x, packet._y, player);
 
                 Log.Write($"sc_login => id : {packet._client_id}, x : {packet._x}, y : {packet._y}");
+            }
+        }
+
+        private void ProcessPacket(sc_welcome packet)
+        {
+            if (CheckTile(packet._x, packet._y))
+            {
+                Player player = new Player(packet._client_id);
+
+                SetObject(packet._x, packet._y, player);
+
+                Log.Write($"sc_welcome => id : {packet._client_id}, x : {packet._x}, y : {packet._y}");
             }
         }
 

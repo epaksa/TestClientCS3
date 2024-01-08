@@ -160,7 +160,9 @@ namespace TestClientCS.Common.Network
                             _id = ((sc_login)packet)._client_id;
                         }
 
-                        Program.ZONE?.PushPacket(packet);
+                        PacketContext context = new PacketContext(this, packet);
+
+                        Program.ZONE?.PushPacketContext(context);
                     }
                     else
                     {
