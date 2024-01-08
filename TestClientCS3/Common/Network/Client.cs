@@ -239,6 +239,10 @@ namespace TestClientCS.Common.Network
 
             switch (packet_id)
             {
+                case PacketID.sc_login:
+                    packet = new sc_login();
+                    packet.Deserialize(ref packet_buffer);
+                    break;
                 case PacketID.sc_move:
                     packet = new sc_move();
                     packet.Deserialize(ref packet_buffer);

@@ -112,6 +112,8 @@ namespace TestClientCS3.Game.Zone
                 Player player = new Player(packet._client_id);
                 
                 SetObject(packet._x, packet._y, player);
+
+                Log.Write($"sc_login => id : {packet._client_id}, x : {packet._x}, y : {packet._y}");
             }
         }
 
