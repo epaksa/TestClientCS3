@@ -131,7 +131,7 @@ namespace TestClientCS3.Game.Zone
             _tile[current_y][current_x]._object = null;
 
             _object_info.Remove(_tile[next_y][next_x]._object._id);
-            _object_info.Add(_tile[next_y][next_x]._object._id, new Pos(current_x, current_y));
+            _object_info.Add(_tile[next_y][next_x]._object._id, new Pos(next_x, next_y));
         }
 
         private void HandlePacketContext(PacketContext context)
@@ -157,8 +157,23 @@ namespace TestClientCS3.Game.Zone
                     ProcessPacket((sc_welcome)context._packet);
                     break;
                 case PacketID.sc_move:
+                    
                     bool my_packet = (((sc_move)context._packet)._move_client_id == context._client._id);
                     ProcessPacket((sc_move)context._packet, my_packet);
+
+                    if (my_packet)
+                    {
+                        if (false == FakeInputContainer.Exist(context._client._id))
+                        {
+                            long time_to_execute = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds() + _random.Next(1, 6); // 1 ~ 5초 추가
+                            FakeInput input = new FakeInput(context._client, FakeInputType.move, time_to_execute); // move할지 attack(아직 미구현)할지 random으로 나중에 돌리기
+
+                            Log.Write($"fake input => id : {input._client._id}, type : {input._type}, time : {input._time_to_execute}");
+
+                            FakeInputContainer.PushInput(input);
+                        }
+                    }
+
                     break;
                 default:
                     break;
