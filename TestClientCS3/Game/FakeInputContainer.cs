@@ -42,16 +42,20 @@ namespace TestClientCS3.Game
             _map.Add(input._client._id, input);
         }
 
-        public static FakeInput? PopInput(int client_id)
+        public static FakeInput? GetInput(int client_id)
         {
             FakeInput? input;
             if (_map.TryGetValue(client_id, out input))
             {
-                _map.Remove(client_id);
                 return input;
             }
 
             return null;
+        }
+
+        public static void RemoveInput(int client_id)
+        {
+            _map.Remove(client_id);
         }
     }
 }

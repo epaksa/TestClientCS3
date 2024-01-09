@@ -15,7 +15,7 @@ namespace TestClientCS
         public static readonly string LOG_FILE_NAME = "log.txt";
         public static readonly string MAP_FILE_NAME = "map.csv";
 
-        public static readonly int CLIENT_COUNT = 10;
+        public static readonly int CLIENT_COUNT = 3;
 
         public static readonly string SERVER_IP = "localhost";
         public static readonly int SERVER_PORT = 19001;
@@ -23,9 +23,7 @@ namespace TestClientCS
         public static readonly int SEND_BUFFER_SIZE = 1024;
         public static readonly int READ_BUFFER_SIZE = 1024;
 
-        public static readonly int LATENCY_LIMIT_IN_MS = 1000;
-
-        public static int CONNECTED_CLIENT_COUNT = 0;
+        public static int CONNECTED_CLIENT_COUNT = 0; // client 모두 접속되면, 시작... 나중에 기능 동작 확인되면 삭제
         public static object LOCK_CONNECTED_CLIENT_COUNT = new object();
 
         public static List<Client> LIST_CLIENT = new List<Client>();
@@ -43,7 +41,6 @@ namespace TestClientCS
             Log.Write($"server => {SERVER_IP}:{SERVER_PORT}");
             Log.Write($"send buffer size => {SEND_BUFFER_SIZE}");
             Log.Write($"read buffer size => {READ_BUFFER_SIZE}");
-            Log.Write($"latency limit(ms) => {LATENCY_LIMIT_IN_MS}");
             Log.Write($"###################################");
 
             ZONE = new Zone(MAP_FILE_NAME);
