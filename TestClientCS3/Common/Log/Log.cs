@@ -23,15 +23,12 @@ namespace TestClientCS.Common
                 {
                     writer.AutoFlush = true;
 
-                    string? message = string.Empty;
-
                     while (true)
                     {
-                        if (_queue.TryDequeue(out message))
+                        if (_queue.TryDequeue(out string? message))
                         {
                             await writer.WriteLineAsync(message).ConfigureAwait(false);
                             Console.WriteLine($"{message}");
-                            message = string.Empty;
                         }
                     }
                 }

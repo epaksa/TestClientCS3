@@ -135,13 +135,13 @@ namespace TestClientCS.Common.Network
                         break;
                     }
 
-                    BasePacket? packet = MakePacket(ref packet_buffer, packet_size);
+                    BasePacket? packet = MakePacket(ref packet_buffer);
 
                     if (null != packet)
                     {
                         if (packet._packet_id == PacketID.sc_login)
                         {
-                            _id = ((sc_login)packet)._client_id;
+                            _id = ((sc_login)packet)._my_info._client_id;
                         }
 
                         PacketContext context = new PacketContext(this, packet);
@@ -215,10 +215,8 @@ namespace TestClientCS.Common.Network
             return true;
         }
 
-        private BasePacket? MakePacket(ref byte[] packet_buffer, int packet_size) // 지금은 packet_size를 안써도, 가변 size의 패킷들이 있어서 나중에 필요함.
+        private BasePacket? MakePacket(ref byte[] packet_buffer)
         {
-            // todo : 생성자에 size집어넣는거 빼기. size는 보낼때 결정되야함... list형식이나 chat같은 패킷땜에
-
             PacketID packet_id = (PacketID)BitConverter.ToInt32(packet_buffer, sizeof(int));
 
             BasePacket? packet = null;
@@ -235,6 +233,10 @@ namespace TestClientCS.Common.Network
                     break;
                 case PacketID.sc_move:
                     packet = new sc_move();
+                    packet.Deserialize(ref packet_buffer);
+                    break;
+                case PacketID.sc_logout:
+                    packet = new sc_logout();
                     packet.Deserialize(ref packet_buffer);
                     break;
                 default:

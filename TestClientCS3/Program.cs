@@ -15,7 +15,7 @@ namespace TestClientCS
         public static readonly string LOG_FILE_NAME = "log.txt";
         public static readonly string MAP_FILE_NAME = "map.csv";
 
-        public static readonly int CLIENT_COUNT = 3;
+        public static readonly int CLIENT_COUNT = 10;
 
         public static readonly string SERVER_IP = "localhost";
         public static readonly int SERVER_PORT = 19001;

@@ -2,7 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using TestClientCS.Common;
@@ -67,11 +69,9 @@ namespace TestClientCS3.Game.Zone
         {
             return Task.Run(() =>
             {
-                PacketContext? context = null;
-
                 while (true)
                 {
-                    if (_packet_context_queue.TryDequeue(out context))
+                    if (_packet_context_queue.TryDequeue(out PacketContext? context))
                     {
                         HandlePacketContext(context);
                     }
@@ -87,13 +87,11 @@ namespace TestClientCS3.Game.Zone
 
                         long now = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds();
 
-                        if (input._time_to_execute > now)
+                        if (input._time_to_execute <= now)
                         {
-                            continue;
+                            HandleFakeInput(input);
+                            FakeInputContainer.RemoveInput(object_info.Key);
                         }
-
-                        HandleFakeInput(input);
-                        FakeInputContainer.RemoveInput(object_info.Key);
                     }
                 }
             });
@@ -134,6 +132,12 @@ namespace TestClientCS3.Game.Zone
             _object_info.Add(_tile[next_y][next_x]._object._id, new Pos(next_x, next_y));
         }
 
+        private void RemoveObject(int x, int y, int object_id)
+        {
+            _tile[y][x]._object = null;
+            _object_info.Remove(object_id);
+        }
+
         private void HandlePacketContext(PacketContext context)
         {
             switch (context._packet._packet_id)
@@ -144,7 +148,8 @@ namespace TestClientCS3.Game.Zone
 
                     if (false == FakeInputContainer.Exist(context._client._id))
                     {
-                        long time_to_execute = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds() + _random.Next(1, 6); // 1 ~ 5초 추가
+                        long time_to_execute = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds() + 1;
+                        //long time_to_execute = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds() + _random.Next(1, 6); // 1 ~ 5초 추가
                         FakeInput input = new FakeInput(context._client, FakeInputType.move, time_to_execute); // move할지 attack(아직 미구현)할지 random으로 나중에 돌리기
 
                         Log.Write($"fake input => id : {input._client._id}, type : {input._type}, time : {input._time_to_execute}");
@@ -158,14 +163,17 @@ namespace TestClientCS3.Game.Zone
                     break;
                 case PacketID.sc_move:
                     
-                    bool my_packet = (((sc_move)context._packet)._move_client_id == context._client._id);
-                    ProcessPacket((sc_move)context._packet, my_packet);
+                    int move_client_id = ((sc_move)context._packet)._move_client_id;
+                    bool my_packet = (move_client_id == context._client._id);
 
                     if (my_packet)
                     {
+                        ProcessPacket((sc_move)context._packet); // dummy client에서는, 자기가 받았을때만 처리. unity client에서는 모두 처리
+
                         if (false == FakeInputContainer.Exist(context._client._id))
                         {
-                            long time_to_execute = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds() + _random.Next(1, 6); // 1 ~ 5초 추가
+                            long time_to_execute = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds() + 1;
+                            //long time_to_execute = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds() + _random.Next(1, 6); // 1 ~ 5초 추가
                             FakeInput input = new FakeInput(context._client, FakeInputType.move, time_to_execute); // move할지 attack(아직 미구현)할지 random으로 나중에 돌리기
 
                             Log.Write($"fake input => id : {input._client._id}, type : {input._type}, time : {input._time_to_execute}");
@@ -175,6 +183,12 @@ namespace TestClientCS3.Game.Zone
                     }
 
                     break;
+                case PacketID.sc_logout:
+
+                    int logout_client_id = ((sc_logout)context._packet)._client_id;
+                    ProcessPacket((sc_logout)context._packet, logout_client_id);
+
+                    break;
                 default:
                     break;
             }
@@ -182,30 +196,49 @@ namespace TestClientCS3.Game.Zone
 
         private void ProcessPacket(sc_login packet)
         {
-            if (CheckTile(packet._x, packet._y))
+            if (false == _object_info.ContainsKey(packet._my_info._client_id))
             {
-                Player player = new Player(packet._client_id);
-                
-                SetObject(packet._x, packet._y, player);
+                if (CheckTile(packet._my_info._x, packet._my_info._y))
+                {
+                    Player player = new Player(packet._my_info._client_id);
 
-                Log.Write($"sc_login => id : {packet._client_id}, x : {packet._x}, y : {packet._y}");
+                    SetObject(packet._my_info._x, packet._my_info._y, player);
+
+                    Log.Write($"sc_login => id : {packet._my_info._client_id}, x : {packet._my_info._x}, y : {packet._my_info._y}");
+                }
+            }
+            else
+            {
+                Log.Write($"sc_login => already exist! id : {packet._my_info._client_id}");
+            }
+
+            foreach (sc_login.ClientPos pos in packet._list_client)
+            {
+                if (_object_info.ContainsKey(pos._client_id))
+                {
+                    continue;
+                }
+
+                Player other_player = new Player(pos._client_id);
+
+                SetObject(pos._x, pos._y, other_player);
             }
         }
 
         private void ProcessPacket(sc_welcome packet)
         {
-            // sc_login을 받는 multi client라서 로그만 찍음
+            if (false == _object_info.ContainsKey(packet._client_id))
+            {
+                Player other_player = new Player(packet._client_id);
+
+                SetObject(packet._x, packet._y, other_player);
+            }
+
             Log.Write($"sc_welcome => id : {packet._client_id}, x : {packet._x}, y : {packet._y}");
         }
 
-        private void ProcessPacket(sc_move packet, bool my_packet)
+        private void ProcessPacket(sc_move packet)
         {
-            if (false == my_packet)
-            {
-                Log.Write($"sc_move => not my packet. moved client id : {packet._move_client_id}, x : {packet._x}, y : {packet._y}");
-                return;
-            }
-
             int current_x = 0;
             int current_y = 0;
 
@@ -234,6 +267,22 @@ namespace TestClientCS3.Game.Zone
             }
         }
 
+        private void ProcessPacket(sc_logout packet, int client_id)
+        {
+            int current_x = 0;
+            int current_y = 0;
+
+            if (false == GetCurrentPos(out current_x, out current_y, client_id))
+            {
+                Log.Write($"sc_logout => not found current pos. id : {client_id}");
+                return;
+            }
+
+            RemoveObject(current_x, current_y, client_id);
+
+            Log.Write($"sc_logout => id : {client_id}");
+        }
+
         private void HandleFakeInput(FakeInput input)
         {
             switch (input._type)
@@ -258,25 +307,22 @@ namespace TestClientCS3.Game.Zone
                 int next_pos_delta_x = _random.Next(-1, 2); // -1 : move left, 1 : move right 
                 int next_pos_delta_y = _random.Next(-1, 2);
 
-                if (next_pos_delta_x == 0 && next_pos_delta_y == 0)
+                int next_pos_x = pos._x + next_pos_delta_x;
+                int next_pos_y = pos._y + next_pos_delta_y;
+
+                if ((next_pos_delta_x == 0 && next_pos_delta_y == 0) || (false == CheckTile(next_pos_x, next_pos_y)))
                 {
                     ProcessFakeInputMove(client);
                     return;
                 }
 
-                int next_pos_x = pos._x + next_pos_delta_x;
-                int next_pos_y = pos._y + next_pos_delta_y;
+                cs_move packet = new cs_move();
+                packet._x = next_pos_x;
+                packet._y = next_pos_y;
 
-                if (CheckTile(next_pos_x, next_pos_y))
-                {
-                    cs_move packet = new cs_move();
-                    packet._x = next_pos_x;
-                    packet._y = next_pos_y;
+                Log.Write($"cs_move => id : {client._id}, x : {packet._x}, y : {packet._y}");
 
-                    Log.Write($"cs_move => id : {client._id}, x : {packet._x}, y : {packet._y}");
-                    
-                    client.Send(packet);
-                }
+                client.Send(packet);
             }
         }
 
