@@ -28,7 +28,7 @@ namespace TestClientCS3.Game.Zone
             }
         }
 
-        private ConcurrentQueue<PacketContext> _packet_context_queue = new ConcurrentQueue<PacketContext> ();
+        private ConcurrentQueue<PacketContext> _packet_context_queue = new ConcurrentQueue<PacketContext>();
 
         private List<List<Tile>> _tile = new List<List<Tile>>();
         private Dictionary<int, Pos> _object_info = new Dictionary<int, Pos>(); // key : client id
@@ -143,7 +143,7 @@ namespace TestClientCS3.Game.Zone
             switch (context._packet._packet_id)
             {
                 case PacketID.sc_login:
-                    
+
                     ProcessPacket((sc_login)context._packet);
 
                     if (false == FakeInputContainer.Exist(context._client._id))
@@ -161,7 +161,7 @@ namespace TestClientCS3.Game.Zone
                     ProcessPacket((sc_welcome)context._packet);
                     break;
                 case PacketID.sc_move:
-                    
+
                     int move_client_id = ((sc_move)context._packet)._move_client_id;
                     bool my_packet = (move_client_id == context._client._id);
 
@@ -327,7 +327,7 @@ namespace TestClientCS3.Game.Zone
         private bool GetCurrentPos(out int out_x, out int out_y, int object_id)
         {
             Pos pos;
-            
+
             if (_object_info.TryGetValue(object_id, out pos))
             {
                 out_x = pos._x;

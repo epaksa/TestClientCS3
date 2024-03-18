@@ -14,7 +14,7 @@ namespace TestClientCS.Common.Network
     public class Client
     {
         public int _id = 0;
-        
+
         TcpClient _client = new TcpClient();
 
         RingBuffer _temp_buffer = new RingBuffer();
