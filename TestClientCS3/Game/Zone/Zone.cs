@@ -148,9 +148,8 @@ namespace TestClientCS3.Game.Zone
 
                     if (false == FakeInputContainer.Exist(context._client._id))
                     {
-                        long time_to_execute = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds() + 1;
-                        //long time_to_execute = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds() + _random.Next(1, 6); // 1 ~ 5초 추가
-                        FakeInput input = new FakeInput(context._client, FakeInputType.move, time_to_execute); // move할지 attack(아직 미구현)할지 random으로 나중에 돌리기
+                        long time_to_execute = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds() + _random.Next(1, 4); // 1 ~ 3초 추가
+                        FakeInput input = new FakeInput(context._client, FakeInputType.move, time_to_execute);
 
                         Log.Write($"fake input => id : {input._client._id}, type : {input._type}, time : {input._time_to_execute}");
 
@@ -172,9 +171,8 @@ namespace TestClientCS3.Game.Zone
 
                         if (false == FakeInputContainer.Exist(context._client._id))
                         {
-                            long time_to_execute = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds() + 1;
-                            //long time_to_execute = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds() + _random.Next(1, 6); // 1 ~ 5초 추가
-                            FakeInput input = new FakeInput(context._client, FakeInputType.move, time_to_execute); // move할지 attack(아직 미구현)할지 random으로 나중에 돌리기
+                            long time_to_execute = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds() + _random.Next(1, 4); // 1 ~ 3초 추가
+                            FakeInput input = new FakeInput(context._client, FakeInputType.move, time_to_execute);
 
                             Log.Write($"fake input => id : {input._client._id}, type : {input._type}, time : {input._time_to_execute}");
 

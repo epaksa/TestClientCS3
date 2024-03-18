@@ -175,8 +175,6 @@ namespace TestClientCS.Common.Network
 
             if (false == _temp_buffer.Empty())
             {
-                //Log.Write($"temp buffer is not empty!!");
-
                 current_size += _temp_buffer.PopAll(new ArraySegment<byte>(packet_buffer, current_size, packet_buffer.Length));
             }
             else
@@ -189,13 +187,9 @@ namespace TestClientCS.Common.Network
 
                 if (false == _read_buffer.Pop(new ArraySegment<byte>(packet_buffer, 0, packet_buffer.Length), sizeof(int)))
                 {
-                    //Log.Write($"get sizeof(int) failed in read buffer.");
+                    Log.Write($"get sizeof(int) failed in read buffer.");
                     return false;
                 }
-                //else
-                //{
-                //    Log.Write($"pop 1 => id : {id}, current read index : {_read_buffer._read_index}");
-                //}
 
                 current_size = sizeof(int);
             }
@@ -204,13 +198,9 @@ namespace TestClientCS.Common.Network
 
             if (false == _read_buffer.Pop(new ArraySegment<byte>(packet_buffer, current_size, packet_buffer.Length - current_size), packet_size - current_size))
             {
-                //Log.Write($"get (packet_size({packet_size}) - current_size({current_size})) failed in read buffer.");
+                Log.Write($"get (packet_size({packet_size}) - current_size({current_size})) failed in read buffer.");
                 return false;
             }
-            //else
-            //{
-            //    Log.Write($"pop 2 => id : {id}, current read index : {_read_buffer._read_index}");
-            //}
 
             return true;
         }
