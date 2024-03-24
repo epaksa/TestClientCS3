@@ -14,8 +14,8 @@ namespace TestClientCS
         public static readonly string SERVER_IP = "localhost";
         public static readonly int SERVER_PORT = 19001;
 
-        public static readonly int SEND_BUFFER_SIZE = 1024;
-        public static readonly int READ_BUFFER_SIZE = 1024;
+        public static readonly int SEND_BUFFER_SIZE = 10240;
+        public static readonly int READ_BUFFER_SIZE = 10240;
 
         public static int CONNECTED_CLIENT_COUNT = 0; // client 모두 접속되면, 시작... 나중에 기능 동작 확인되면 삭제
         public static object LOCK_CONNECTED_CLIENT_COUNT = new object();

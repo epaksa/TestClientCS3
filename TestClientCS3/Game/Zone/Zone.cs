@@ -81,8 +81,16 @@ namespace TestClientCS3.Game.Zone
 
                         if (input._time_to_execute <= now)
                         {
-                            HandleFakeInput(input);
-                            FakeInputContainer.RemoveInput(object_info.Key);
+                            bool finished = HandleFakeInput(input);
+
+                            if (finished)
+                            {
+                                FakeInputContainer.RemoveInput(object_info.Key);
+                            }
+                            else
+                            {
+                                input._time_to_execute += 5; // 5초후 다시 시도
+                            }
                         }
                     }
                 }
@@ -273,12 +281,14 @@ namespace TestClientCS3.Game.Zone
             Log.Write($"sc_logout => id : {client_id}");
         }
 
-        private void HandleFakeInput(FakeInput input)
+        private bool HandleFakeInput(FakeInput input)
         {
+            bool result = true;
+
             switch (input._type)
             {
                 case FakeInputType.move:
-                    ProcessFakeInputMove(input._client);
+                    result = ProcessFakeInputMove(input._client, 0);
                     break;
                 case FakeInputType.attack:
                     break;
@@ -287,10 +297,17 @@ namespace TestClientCS3.Game.Zone
                 default:
                     break;
             }
+
+            return result;
         }
 
-        private void ProcessFakeInputMove(Client client)
+        private bool ProcessFakeInputMove(Client client, int checked_count)
         {
+            if (10 == checked_count) // 주위에 player들에게 둘러쌓이면, call stack overflow나서 check count 추가.
+            {
+                return false;
+            }
+
             Pos pos;
             if (_object_info.TryGetValue(client._id, out pos))
             {
@@ -302,8 +319,7 @@ namespace TestClientCS3.Game.Zone
 
                 if ((next_pos_delta_x == 0 && next_pos_delta_y == 0) || (false == CheckTile(next_pos_x, next_pos_y)))
                 {
-                    ProcessFakeInputMove(client);
-                    return;
+                    return ProcessFakeInputMove(client, checked_count+1);
                 }
 
                 cs_move packet = new cs_move();
@@ -313,7 +329,11 @@ namespace TestClientCS3.Game.Zone
                 Log.Write($"cs_move => id : {client._id}, x : {packet._x}, y : {packet._y}");
 
                 client.Send(packet);
+
+                return true;
             }
+
+            return false;
         }
 
         private bool GetCurrentPos(out int out_x, out int out_y, int object_id)
