@@ -77,7 +77,7 @@ namespace TestClientCS3.Game.Zone
                             continue;
                         }
 
-                        long now = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds();
+                        long now = new DateTimeOffset(DateTime.Now).ToUnixTimeMilliseconds();
 
                         if (input._time_to_execute <= now)
                         {
@@ -89,7 +89,7 @@ namespace TestClientCS3.Game.Zone
                             }
                             else
                             {
-                                input._time_to_execute += 5; // 5초후 다시 시도
+                                input._time_to_execute += 5000; // 5초후 다시 시도
                             }
                         }
                     }
@@ -148,7 +148,7 @@ namespace TestClientCS3.Game.Zone
 
                     if (false == FakeInputContainer.Exist(context._client._id))
                     {
-                        long time_to_execute = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds() + _random.Next(1, 4); // 1 ~ 3초 추가
+                        long time_to_execute = new DateTimeOffset(DateTime.Now).ToUnixTimeMilliseconds() + _random.Next(1000, 3001); // 1 ~ 3초 추가
                         FakeInput input = new FakeInput(context._client, FakeInputType.move, time_to_execute);
 
                         Log.Write($"fake input => id : {input._client._id}, type : {input._type}, time : {input._time_to_execute}");
@@ -171,7 +171,7 @@ namespace TestClientCS3.Game.Zone
 
                         if (false == FakeInputContainer.Exist(context._client._id))
                         {
-                            long time_to_execute = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds() + _random.Next(1, 4); // 1 ~ 3초 추가
+                            long time_to_execute = new DateTimeOffset(DateTime.Now).ToUnixTimeMilliseconds() + _random.Next(1000, 3001); // 1 ~ 3초 추가
                             FakeInput input = new FakeInput(context._client, FakeInputType.move, time_to_execute);
 
                             Log.Write($"fake input => id : {input._client._id}, type : {input._type}, time : {input._time_to_execute}");
